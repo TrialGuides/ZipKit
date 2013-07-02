@@ -83,20 +83,27 @@
 + (ZKCDTrailer *) recordWithArchivePath:(NSString *)path {
 	NSFileHandle *file = [NSFileHandle fileHandleForReadingAtPath:path];
 	unsigned long long fileOffset = [file seekToEndOfFile];
-	for (UInt32 trailerCheck = 0; trailerCheck != ZKCDTrailerMagicNumber && fileOffset > 0; fileOffset--) {
-		[file seekToFileOffset:fileOffset];
-		NSData *data = [file readDataOfLength:sizeof(UInt32)];
-		[data getBytes:&trailerCheck length:sizeof(UInt32)];
+	@autoreleasepool {
+		for (UInt32 trailerCheck = 0; trailerCheck != ZKCDTrailerMagicNumber && fileOffset > 0; fileOffset--) {
+			@autoreleasepool {
+				[file seekToFileOffset:fileOffset];
+				NSData *data = [file readDataOfLength:sizeof(UInt32)];
+				[data getBytes:&trailerCheck length:sizeof(UInt32)];
+			}
+		}
 	}
 	if (fileOffset < 1) {
 		[file closeFile];
 		return nil;
 	}
-	fileOffset++;
-	[file seekToFileOffset:fileOffset];
-	NSData *data = [file readDataToEndOfFile];
-	[file closeFile];
-	ZKCDTrailer *record = [self recordWithData:data atOffset:(NSUInteger) 0];
+	ZKCDTrailer *record;
+	@autoreleasepool {
+		fileOffset++;
+		[file seekToFileOffset:fileOffset];
+		NSData *data = [file readDataToEndOfFile];
+		[file closeFile];
+		record = [self recordWithData:data atOffset:(NSUInteger) 0];
+	}
 	return record;
 }
 
